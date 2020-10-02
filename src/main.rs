@@ -1,3 +1,6 @@
+mod input;
+mod solutions;
+
 fn main() {
-    println!("Hello, world!");
+    solutions::day01::day01();
 }
