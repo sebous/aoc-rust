@@ -1,4 +1,5 @@
 mod input;
+mod intcode_computer;
 mod solutions;
 
 fn main() {
