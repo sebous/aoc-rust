@@ -19,9 +19,6 @@ pub fn day02() {
     println!("Part 1:");
     println!("{}", part_1_memory[0]);
 
-    let mut noun: u32;
-    let mut verb: u32;
-
     'outer_loop: for x in 0..99 {
         for y in 0..99 {
             let mut test_program_input = input_program.clone();
@@ -31,8 +28,9 @@ pub fn day02() {
 
             let part_2_memory = computer.run();
             if part_2_memory[0] == 19690720 {
-                noun = x;
-                verb = y;
+                let noun = x;
+                let verb = y;
+                println!("Part 2:");
                 println!("{}", 100 * noun + verb);
                 break 'outer_loop;
             }
