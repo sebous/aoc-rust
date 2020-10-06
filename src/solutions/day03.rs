@@ -19,11 +19,16 @@ pub fn run() {
         .map(|s| s.parse().unwrap())
         .collect();
 
+    struct Intersection {
+        pub x: u8,
+        pub y: u8,
+    }
+
     let mut current_pos: (i32, i32) = (0, 0);
-    let mut grid: HashMap<(i32, i32), u8> = HashMap::new();
+    let mut grid: HashMap<(i32, i32), (u8, u8)> = HashMap::new();
 
     // add first point
-    grid.insert((0, 0), 1);
+    grid.insert((0, 0), (0, 0));
 
     [program_one, program_two].iter().for_each(|program| {
         program.iter().for_each(|instr| {
@@ -45,24 +50,34 @@ pub fn run() {
             // println!("target pos: {:?}", _target_pos);
             if x != target_x {
                 let start: i32 = if x > target_x { x - 1 } else { x + 1 };
+                // println!(
+                //     "{:?}",
+                //     util::range(start, target_x)
+                //         .into_iter()
+                //         .collect::<Vec<i32>>(),
+                // );
                 util::range(start, target_x).for_each(|val| {
                     // println!("{:?}", (val, y));
                     if let Some(coord_value) = grid.get_mut(&(val, y)) {
-                        // println!("value found {}", coord_value);
-                        *coord_value += 1;
+                        *coord_value = (1, coord_value.1);
                     } else {
-                        let _res = grid.insert((val, y), 1);
+                        let _res = grid.insert((val, y), (1, 0));
                     }
                 });
             } else {
                 let start: i32 = if y > target_y { y - 1 } else { y + 1 };
+                // println!(
+                //     "{:?}",
+                //     util::range(start, target_y)
+                //         .into_iter()
+                //         .collect::<Vec<i32>>(),
+                // );
                 util::range(start, target_y).for_each(|val| {
                     // println!("{:?}", (x, val));
                     if let Some(coord_value) = grid.get_mut(&(x, val)) {
-                        // println!("value found {}", coord_value);
-                        *coord_value += 1;
+                        *coord_value = (coord_value.0, 1);
                     } else {
-                        let _res = grid.insert((x, val), 1);
+                        let _res = grid.insert((x, val), (0, 1));
                     }
                 })
             }
@@ -73,12 +88,22 @@ pub fn run() {
     });
     println!("grid size: {}", grid.len());
 
-    // TODO: doesn't work
     let intersections: Vec<(i32, i32)> = grid
         .iter()
-        .filter(|(&key, &val)| val >= 2)
-        .map(|(&key, val)| key)
+        .filter(|(&_key, &coord_value)| coord_value.0 == 1 && coord_value.1 == 1)
+        .map(|(&key, _val)| key)
         .collect();
 
     println!("itersections count: {}", intersections.len());
+
+    let minimal_distance = intersections
+        .iter()
+        .map(|&pos| {
+            // println!("{:#?}", pos);
+            return pos.0.abs() + pos.1.abs();
+        })
+        .min()
+        .unwrap();
+
+    println!("Part 1: {}", minimal_distance);
 }
