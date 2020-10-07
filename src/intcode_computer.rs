@@ -1,52 +1,88 @@
+use std::io::{self, Read};
+
 pub struct IntcodeComputer {
-    pub program: Vec<u32>,
+    memory: Vec<i32>,
+    pointer: usize,
 }
-struct InstrParams {
-    pub first_param: usize,
-    pub second_param: usize,
-    pub third_param: usize,
+
+enum ParamMode {
+    POSITION,
+    IMMEDIATE,
 }
 
 impl IntcodeComputer {
-    pub fn run(&self) -> Vec<u32> {
-        const INSTR_SIZE: usize = 4;
-        const EXIT_OP: u32 = 99;
-        let mut memory = self.program.clone();
+    pub fn new(program: Vec<i32>) -> Self {
+        IntcodeComputer {
+            memory: program.clone(),
+            pointer: 0,
+        }
+    }
 
-        let mut memory_pointer: usize = 0;
-        let mut op_code: u32;
+    pub fn run(&mut self) -> Vec<i32> {
+        let instruction = |instr: i32| -> ((ParamMode, ParamMode, ParamMode), u32) {
+            let instr = format!("{:05}", instr);
+            let len = instr.len();
+
+            let param_modes: Vec<ParamMode> = instr
+                .chars()
+                .take(3)
+                .map(|ch| match ch {
+                    '0' => return ParamMode::POSITION,
+                    '1' => return ParamMode::IMMEDIATE,
+                    _ => panic!("wrong paramterer mode!"),
+                })
+                .collect();
+            let param_modes_tuple = (param_modes[0], param_modes[1], param_modes[2]);
+            let op_code: u32 = instr[3..4].parse().unwrap();
+
+            return (param_modes_tuple, op_code);
+        };
+        const EXIT_OP: u32 = 99;
+
+        let get_param = |param_i: usize, param_mode: ParamMode| -> i32 {
+            match param_mode {
+                ParamMode::POSITION => {
+                    let i = self.memory[self.pointer + param_i + 1];
+                    return self.memory[i as usize];
+                }
+                ParamMode::IMMEDIATE => self.memory[self.pointer + param_i + 1],
+                _ => panic!("wrong parameter mode"),
+            }
+        };
 
         loop {
-            op_code = memory[memory_pointer];
+            let instruction = instruction(self.memory[self.pointer]);
+            let (param_modes, op_code) = instruction;
             if op_code == EXIT_OP {
                 break;
             }
-            let params = InstrParams {
-                first_param: memory[memory_pointer + 1] as usize,
-                second_param: memory[memory_pointer + 2] as usize,
-                third_param: memory[memory_pointer + 3] as usize,
-            };
 
-            // println!("--------");
-            // println!("{}", op_code);
-            // println!("{:?}", memory);
-            // println!("{}", memory[params.third]);
-            // println!("--------");
             match op_code {
                 1 => {
-                    memory[params.third_param] =
-                        memory[params.first_param] + memory[params.second_param]
+                    &self.memory[self.memory[self.pointer + 3] as usize] =
+                        get_param(0, param_modes.0) + get_param(1, param_modes.1);
+                    self.pointer += 4;
                 }
                 2 => {
-                    memory[params.third_param] =
-                        memory[params.first_param] * memory[params.second_param]
+                    self.memory[self.memory[self.pointer + 3] as usize] =
+                        get_param(0, param_modes.0) * get_param(1, param_modes.1);
+                    self.pointer += 4;
+                }
+                3 => {
+                    let mut buffer = String::new();
+                    io::stdin().read_to_string(&mut buffer).unwrap();
+                    self.memory[self.memory[self.pointer + 1] as usize] =
+                        buffer.parse::<i32>().unwrap();
+
+                    self.pointer += 2;
+                }
+                4 => {
+                    println!("{}", get_param(0, param_modes.0));
+                    self.pointer += 2;
                 }
                 _ => panic!("Unexpected op_code: {}", op_code),
             }
-
-            memory_pointer += INSTR_SIZE;
         }
-        // println!("{:?}", memory);
-        return memory;
+        return self.memory;
     }
 }
